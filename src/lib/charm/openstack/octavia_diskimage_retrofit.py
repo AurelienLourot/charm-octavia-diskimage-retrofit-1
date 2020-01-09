@@ -107,35 +107,23 @@ class OctaviaDiskimageRetrofitCharm(charms_openstack.charm.OpenStackCharm):
             cmd.append('-d')
         cmd.extend([input_file.name, output_file.name])
         try:
-            # Juju has 8 proxy-related model configs, see
-            # https://jaas.ai/docs/configuring-models :
-            # * juju-http-proxy and http-proxy
-            # * juju-https-proxy and https-proxy
-            # * juju-ftp-proxy and ftp-proxy
-            # * juju-no-proxy and no-proxy
+            # We want to pass the [juju-]{http,https,ftp,no}-proxy model
+            # configs as envvars (http_proxy, HTTP_PROXY, https_proxy, etc.) to
+            # octavia-diskimage-retrofit.
             #
-            # The non-juju ones are considered legacy, see
-            # https://github.com/juju/charm-helpers/issues/304
+            # env_proxy_settings() returns a dict with these envvars. See
+            # https://github.com/juju/charm-helpers/pull/248
             #
-            # The goal is to pass these values on to octavia-diskimage-retrofit
-            # as the following envvars:
-            # * http_proxy and HTTP_PROXY
-            # * https_proxy and HTTPS_PROXY
-            # * ftp_proxy and FTP_PROXY
-            # * no_proxy and NO_PROXY
-            #
-            # env_proxy_settings() returns a dict with these 8 envvars. See
-            # https://github.com/juju/charm-helpers/blob/3b98ce5/tests/core/test_hookenv.py#L1535
-            #
-            # It is then up to octavia-diskimage-retrofit to make use of these
-            # envvars or not. This fixes
+            # It is then up to octavia-diskimage-retrofit to make use of them
+            # or not. This fixes
             # https://bugs.launchpad.net/charm-octavia-diskimage-retrofit/+bug/1843510
             proxy_envvars = ch_core.hookenv.env_proxy_settings()
             ch_core.hookenv.log('proxy_envvars: {}'.format(proxy_envvars),
                                 level=ch_core.hookenv.DEBUG)
 
             envvars = os.environ.copy()
-            envvars.update(proxy_envvars)
+            if proxy_envvars is not None:
+                envvars.update(proxy_envvars)
             output = subprocess.check_output(
                 cmd, stderr=subprocess.STDOUT, universal_newlines=True,
                 env=envvars)

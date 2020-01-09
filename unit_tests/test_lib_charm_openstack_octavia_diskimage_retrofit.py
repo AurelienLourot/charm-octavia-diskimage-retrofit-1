@@ -100,7 +100,8 @@ class TestOctaviaDiskimageRetrofitCharm(test_utils.PatchHelper):
                 ['octavia-diskimage-retrofit', '-u', 'pocket', '-d',
                  self.NamedTemporaryFile().name,
                  self.NamedTemporaryFile().name],
-                stderr=subprocess.STDOUT, universal_newlines=True)
+                stderr=subprocess.STDOUT, universal_newlines=True,
+                env=os.environ)
             glance.images.create.assert_called_once_with(
                 container_format='bare',
                 disk_format='qcow2',
